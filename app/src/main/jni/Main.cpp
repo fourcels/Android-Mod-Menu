@@ -27,7 +27,7 @@ int scoreMul = 1, coinsMul = 1;
 struct MemPatches {
     // let's assume we have patches for these functions for whatever game
     // boolean get_canShoot() function
-    MemoryPatch noDeath;
+    MemoryPatch merge;
     // etc...
 } gPatches;
 
@@ -42,51 +42,8 @@ jobjectArray GetFeatureList(JNIEnv *env, jobject context) {
     jobjectArray ret;
 
     const char *features[] = {
-            OBFUSCATE("Toggle_No death"),
-            OBFUSCATE("Button_Start Invcibility (30 sec duration)"),
-            OBFUSCATE("SeekBar_Score multiplier_1_100"),
-            OBFUSCATE("SeekBar_Coins multiplier_1_1000"),
-            OBFUSCATE("Category_Examples"), //Not counted
-            OBFUSCATE("Toggle_The toggle"),
-            OBFUSCATE(
-                    "100_Toggle_True_The toggle 2"), //This one have feature number assigned, and switched on by default
-            OBFUSCATE("110_Toggle_The toggle 3"), //This one too
-            OBFUSCATE("SeekBar_The slider_1_100"),
-            OBFUSCATE("SeekBar_Kittymemory slider example_1_5"),
-            OBFUSCATE("Spinner_The spinner_Items 1,Items 2,Items 3"),
-            OBFUSCATE("Button_The button"),
-            OBFUSCATE("ButtonLink_The button with link_https://www.youtube.com/"), //Not counted
-            OBFUSCATE("ButtonOnOff_The On/Off button"),
-            OBFUSCATE("CheckBox_The Check Box"),
-            OBFUSCATE("InputValue_Input number"),
-            OBFUSCATE("InputValue_1000_Input number 2"), //Max value
-			OBFUSCATE("1111_InputLValue_Input long number"),
-            OBFUSCATE("InputLValue_1000000000000_Input long number 2"), //Max value
-            OBFUSCATE("InputText_Input text"),
-            OBFUSCATE("RadioButton_Radio buttons_OFF,Mod 1,Mod 2,Mod 3"),
-
-            //Create new collapse
-            OBFUSCATE("Collapse_Collapse 1"),
-            OBFUSCATE("CollapseAdd_Toggle_The toggle"),
-            OBFUSCATE("CollapseAdd_Toggle_The toggle"),
-            OBFUSCATE("123_CollapseAdd_Toggle_The toggle"),
-            OBFUSCATE("122_CollapseAdd_CheckBox_Check box"),
-            OBFUSCATE("CollapseAdd_Button_The button"),
-
-            //Create new collapse again
-            OBFUSCATE("Collapse_Collapse 2_True"),
-            OBFUSCATE("CollapseAdd_SeekBar_The slider_1_100"),
-            OBFUSCATE("CollapseAdd_InputValue_Input number"),
-
-            OBFUSCATE("RichTextView_This is text view, not fully HTML."
-                      "<b>Bold</b> <i>italic</i> <u>underline</u>"
-                      "<br />New line <font color='red'>Support colors</font>"
-                      "<br/><big>bigger Text</big>"),
-            OBFUSCATE("RichWebView_<html><head><style>body{color: white;}</style></head><body>"
-                      "This is WebView, with REAL HTML support!"
-                      "<div style=\"background-color: darkblue; text-align: center;\">Support CSS</div>"
-                      "<marquee style=\"color: green; font-weight:bold;\" direction=\"left\" scrollamount=\"5\" behavior=\"scroll\">This is <u>scrollable</u> text</marquee>"
-                      "</body></html>")
+//            OBFUSCATE("Category_Examples"), //Not counted
+            OBFUSCATE("Toggle_Merge"),
     };
 
     int Total_Feature = (sizeof features / sizeof features[0]);
@@ -108,20 +65,11 @@ void Changes(JNIEnv *env, jclass clazz, jobject obj, jint featNum, jstring featN
         case 0:
         {
             if (boolean)
-                gPatches.noDeath.Modify();
+                gPatches.merge.Modify();
             else
-                gPatches.noDeath.Restore();
+                gPatches.merge.Restore();
             break;
         }
-        case 1:
-            btnPressed = true;
-            break;
-        case 2:
-            scoreMul = value;
-            break;
-        case 3:
-            coinsMul = value;
-            break;
     }
 }
 
@@ -194,7 +142,7 @@ void hack_thread() {
     // This function can completely replace MemoryPatch::createWithHex:
     // int DobbyCodePatch(void *address, uint8_t *buffer, uint32_t buffer_size); (from dobby.h)
     // And it is more powerful and intuitive.
-    gPatches.noDeath = MemoryPatch::createWithHex(il2cppBase + str2Offset(OBFUSCATE("0x1079728")), "C0 03 5F D6");
+    gPatches.merge = MemoryPatch::createWithHex(il2cppBase + str2Offset(OBFUSCATE("0x25AF414")), "20 00 80 D2 C0 03 5F D6");
 
     //HOOK(targetLibName, str2Offset(OBFUSCATE("0x1079728")), Kill, old_Kill);
 
