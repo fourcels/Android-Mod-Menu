@@ -28,6 +28,7 @@ struct MemPatches {
     // let's assume we have patches for these functions for whatever game
     // boolean get_canShoot() function
     MemoryPatch merge;
+    MemoryPatch free;
     // etc...
 } gPatches;
 
@@ -44,6 +45,7 @@ jobjectArray GetFeatureList(JNIEnv *env, jobject context) {
     const char *features[] = {
 //            OBFUSCATE("Category_Examples"), //Not counted
             OBFUSCATE("Toggle_Merge"),
+            OBFUSCATE("Toggle_Free"),
     };
 
     int Total_Feature = (sizeof features / sizeof features[0]);
@@ -68,6 +70,14 @@ void Changes(JNIEnv *env, jclass clazz, jobject obj, jint featNum, jstring featN
                 gPatches.merge.Modify();
             else
                 gPatches.merge.Restore();
+            break;
+        }
+        case 1:
+        {
+            if (boolean)
+                gPatches.free.Modify();
+            else
+                gPatches.free.Restore();
             break;
         }
     }
@@ -143,6 +153,7 @@ void hack_thread() {
     // int DobbyCodePatch(void *address, uint8_t *buffer, uint32_t buffer_size); (from dobby.h)
     // And it is more powerful and intuitive.
     gPatches.merge = MemoryPatch::createWithHex(il2cppBase + str2Offset(OBFUSCATE("0x25AF414")), "20 00 80 D2 C0 03 5F D6");
+    gPatches.free = MemoryPatch::createWithHex(il2cppBase + str2Offset(OBFUSCATE("0x277C9F0")), "20 00 80 D2 C0 03 5F D6");
 
     //HOOK(targetLibName, str2Offset(OBFUSCATE("0x1079728")), Kill, old_Kill);
 
