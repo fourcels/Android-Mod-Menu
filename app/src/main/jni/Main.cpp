@@ -1,4 +1,5 @@
 #include <list>
+#include <utility>
 #include <vector>
 #include <cstring>
 #include <pthread.h>
@@ -16,6 +17,7 @@
 #include "Menu/Menu.hpp"
 #include "Menu/Jni.hpp"
 #include "Includes/Macros.h"
+#include <string>
 
 // Dobby is a very powerful hook framework that including hook, stub, patch, and symbol resolve.
 // It can completely replace And64InlineHook and KittyMemory, so they are deprecated.
@@ -29,6 +31,7 @@ struct MemPatches {
     // boolean get_canShoot() function
     MemoryPatch merge;
     MemoryPatch free;
+    MemoryPatch spent;
     // etc...
 } gPatches;
 
@@ -44,8 +47,9 @@ jobjectArray GetFeatureList(JNIEnv *env, jobject context) {
 
     const char *features[] = {
 //            OBFUSCATE("Category_Examples"), //Not counted
-            OBFUSCATE("Toggle_Merge"),
-            OBFUSCATE("Toggle_Free"),
+            OBFUSCATE("Toggle_Merge"), // CanBeMerged
+            OBFUSCATE("Toggle_Free"), // IsNowFreeByTime
+            OBFUSCATE("Toggle_Spent"), // TrySpent TryEventSpent
     };
 
     int Total_Feature = (sizeof features / sizeof features[0]);
@@ -60,6 +64,7 @@ jobjectArray GetFeatureList(JNIEnv *env, jobject context) {
 }
 
 bool btnPressed = false;
+bool spent = false;
 
 void Changes(JNIEnv *env, jclass clazz, jobject obj, jint featNum, jstring featName, jint value, jlong Lvalue, jboolean boolean, jstring text) {
 
@@ -80,7 +85,33 @@ void Changes(JNIEnv *env, jclass clazz, jobject obj, jint featNum, jstring featN
                 gPatches.free.Restore();
             break;
         }
+        case 2:
+        {
+            spent = boolean;
+            break;
+        }
     }
+}
+
+void (*old_Spent)(void *instance, int type, int value, void *com);
+
+void Spent(void *instance, int type, int value, void *com) {
+    if (instance != nullptr) {
+        if (spent) {
+            value = -value;
+        }
+    }
+    return old_Spent(instance, type, value, com);
+}
+void (*old_EventSpent)(void *instance, int type, int value, char* eventType);
+
+void EventSpent(void *instance, int type, int value, char* eventType) {
+    if (instance != nullptr) {
+        if (spent) {
+            value = -value;
+        }
+    }
+    return old_EventSpent(instance, type, value, eventType);
 }
 
 //CharacterPlayer
@@ -142,12 +173,13 @@ void hack_thread() {
     uintptr_t il2cppBase = g_il2cppELF.base();
 
     //Il2Cpp: Use RVA offset
-    StartInvcibility = (void (*)(void *, float)) getAbsoluteAddress(targetLibName, str2Offset(
-            OBFUSCATE("0x107A3BC")));
-
-    HOOK(targetLibName, str2Offset(OBFUSCATE("0x107A2E0")), AddScore, old_AddScore);
-    HOOK(targetLibName, str2Offset(OBFUSCATE("0x107A2FC")), AddCoins, old_AddCoins);
-    HOOK(targetLibName, str2Offset(OBFUSCATE("0x1078C44")), Update, old_Update);
+//    StartInvcibility = (void (*)(void *, float)) getAbsoluteAddress(targetLibName, str2Offset(
+//            OBFUSCATE("0x107A3BC")));
+//
+//    HOOK(targetLibName, str2Offset(OBFUSCATE("0x107A2E0")), AddScore, old_AddScore);
+//    HOOK(targetLibName, str2Offset(OBFUSCATE("0x107A2FC")), AddCoins, old_AddCoins);
+    HOOK(targetLibName, str2Offset(OBFUSCATE("0x243E6AC")), Spent, old_Spent);
+    HOOK(targetLibName, str2Offset(OBFUSCATE("0x243EA48")), EventSpent, old_EventSpent);
 
     // This function can completely replace MemoryPatch::createWithHex:
     // int DobbyCodePatch(void *address, uint8_t *buffer, uint32_t buffer_size); (from dobby.h)
